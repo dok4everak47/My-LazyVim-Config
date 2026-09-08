@@ -11,44 +11,53 @@ local lmap = function(lhs, rhs, opts)
 end
 
 
--- ── jk 退出插入模式（原 polish.lua：insert 模式 jk=Esc）──
--- 注：VSCode Neovim 由 settings.json 的 vim.insertModeKeyBindingsNonRecursive 处理，此处只给真正的 nvim。
--- 顺序：stopinsert 离开 insert → vim.schedule → 清理残留 snippet → w! 强制保存 → 格式化
--- （rust 且有 cargo → cargo fmt；其余 → LazyVim.format）。每步 pcall 包裹：出错不阻断后续，保证 w! 一定执行。
-map("i", "jk", function()
-  vim.cmd("stopinsert")
-  vim.schedule(function()
-    -- 1) 清理残留 LuaSnip snippet（若有），避免退出后 Tab 被当成跳占位
-    pcall(function()
-      local ls_ok, ls = pcall(require, "luasnip")
-      if ls_ok and ls.expand_or_jumpable() then
-        ls.unlink_current()
-      end
-    end)
-
-    -- 2) 强制保存（核心，必须执行）
-    pcall(vim.cmd, "w!")
-
-    -- 3) 格式化：rust + cargo 可用 → cargo fmt；否则 LazyVim.format
-    local ft = vim.bo.filetype
-    if ft == "rust" and vim.fn.executable("cargo") == 1 and vim.fn.findfile("Cargo.toml", ".;") ~= "" then
-      local dir = vim.fn.expand("%:p:h")
-      vim.system({ "cargo", "fmt" }, { cwd = dir, text = true }, function(res)
-        if res.code ~= 0 then
-          vim.schedule(function()
-            vim.notify("cargo fmt 失败 (exit " .. res.code .. "): " .. (res.stderr or ""):gsub("%s+$", ""), vim.log.levels.ERROR)
-          end)
-        else
-          vim.schedule(function()
-            vim.cmd("checktime")
-          end)
+-- ── jk：退出插入模式 + 强制保存 + 格式化 ──
+-- 注：终端 nvim 与 VS Code(vscode-neovim)共用本配置（vscode-neovim 嵌入 nvim 加载完整配置，
+-- 并设 vim.g.vscode=1（数字，用 ~= nil 判定）。
+-- 终端 nvim：完整行为——stopinsert → 清理残留 snippet → w! 强制保存 → 格式化
+--   （rust 且有 cargo → cargo fmt；其余 → LazyVim.format）。每步 pcall 包裹：出错不阻断后续，
+--   保证 w! 一定执行。
+-- VS Code：只退 insert + 保存；格式化交给 VS Code 自带 formatOnSave
+--   （rust 走 rust-analyzer 扩展，底层也是 rustfmt，与 cargo fmt 结果一致，避免双重格式化）。
+local in_vscode = vim.g.vscode ~= nil -- vscode-neovim 注入的是 g:vscode=1（数字），用 ~= nil 判定
+if in_vscode then
+  map("i", "jk", "<Esc><cmd>w!<CR>", { desc = "jk exit insert + save (VS Code formats on save)" })
+else
+  map("i", "jk", function()
+    vim.cmd("stopinsert")
+    vim.schedule(function()
+      -- 1) 清理残留 LuaSnip snippet（若有），避免退出后 Tab 被当成跳占位
+      pcall(function()
+        local ls_ok, ls = pcall(require, "luasnip")
+        if ls_ok and ls.expand_or_jumpable() then
+          ls.unlink_current()
         end
       end)
-    else
-      pcall(LazyVim.format, { force = true })
-    end
-  end)
-end, { desc = "jk exit insert + force save + format (rust: cargo fmt)" })
+
+      -- 2) 强制保存（核心，必须执行）
+      pcall(vim.cmd, "w!")
+
+      -- 3) 格式化：rust + cargo 可用 → cargo fmt；否则 LazyVim.format
+      local ft = vim.bo.filetype
+      if ft == "rust" and vim.fn.executable("cargo") == 1 and vim.fn.findfile("Cargo.toml", ".;") ~= "" then
+        local dir = vim.fn.expand("%:p:h")
+        vim.system({ "cargo", "fmt" }, { cwd = dir, text = true }, function(res)
+          if res.code ~= 0 then
+            vim.schedule(function()
+              vim.notify("cargo fmt 失败 (exit " .. res.code .. "): " .. (res.stderr or ""):gsub("%s+$", ""), vim.log.levels.ERROR)
+            end)
+          else
+            vim.schedule(function()
+              vim.cmd("checktime")
+            end)
+          end
+        end)
+      else
+        pcall(LazyVim.format, { force = true })
+      end
+    end)
+  end, { desc = "jk exit insert + force save + format (rust: cargo fmt)" })
+end
 
 -- ── 缓冲区切换（原 polish.lua setup_buffer_navigation + astrocore）──
 lmap("<leader>bn", "<cmd>bn<CR>", { desc = "Next buffer" })
