@@ -1,0 +1,53 @@
+-- avante.nvim — Cursor 式 AI 助手（聊天 + 行内编辑 + Agent 模式）
+-- 2026-09-08 自装。注意：不用 LazyVim extras/ai/avante 的 import ——
+-- 那个 extra 会把 blink.cmp sources.default 强制覆盖为 { "avante" }，
+-- 挤掉 lsp/path/snippets/buffer 补全源。这里自己写 spec，完全可控。
+-- Provider：火山方舟 Ark Coding Plan（OpenAI 兼容 chat/completions，
+--   key 在 config/secrets.lua，gitignore 不提交；模型 ark-code-latest 自动路由最新代码模型）
+
+return {
+  {
+    "yetone/avante.nvim",
+    event = "VeryLazy",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+    },
+    opts = function()
+      -- 本地密钥文件（不入库）：设置 vim.env.ARK_API_KEY
+      pcall(require, "config.secrets")
+
+      return {
+        provider = "ark",
+        model = "ark-code-latest",
+        selection = {
+          hint_display = "none",
+        },
+        behaviour = {
+          auto_set_keymaps = false,
+        },
+        providers = {
+          ark = {
+            __inherited_from = "openai",
+            api_key_name = "ARK_API_KEY",
+            endpoint = "https://ark.cn-beijing.volces.com/api/coding/v3",
+            model = "ark-code-latest",
+          },
+        },
+      }
+    end,
+    keys = {
+      { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "Ask Avante" },
+      { "<leader>ac", "<cmd>AvanteChat<CR>", desc = "Chat with Avante" },
+      { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "Edit Avante" },
+      { "<leader>af", "<cmd>AvanteFocus<CR>", desc = "Focus Avante" },
+      { "<leader>ah", "<cmd>AvanteHistory<CR>", desc = "Avante History" },
+      { "<leader>am", "<cmd>AvanteModels<CR>", desc = "Select Avante Model" },
+      { "<leader>an", "<cmd>AvanteChatNew<CR>", desc = "New Avante Chat" },
+      { "<leader>ap", "<cmd>AvanteSwitchProvider<CR>", desc = "Switch Avante Provider" },
+      { "<leader>ar", "<cmd>AvanteRefresh<CR>", desc = "Refresh Avante" },
+      { "<leader>as", "<cmd>AvanteStop<CR>", desc = "Stop Avante" },
+      { "<leader>at", "<cmd>AvanteToggle<CR>", desc = "Toggle Avante" },
+    },
+  },
+}
