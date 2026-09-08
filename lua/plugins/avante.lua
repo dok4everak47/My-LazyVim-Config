@@ -2,8 +2,11 @@
 -- 2026-09-08 自装。注意：不用 LazyVim extras/ai/avante 的 import ——
 -- 那个 extra 会把 blink.cmp sources.default 强制覆盖为 { "avante" }，
 -- 挤掉 lsp/path/snippets/buffer 补全源。这里自己写 spec，完全可控。
--- Provider：火山方舟 Ark Coding Plan（OpenAI 兼容 chat/completions，
---   key 在 config/secrets.lua，gitignore 不提交；模型 ark-code-latest 自动路由最新代码模型）
+-- Provider：CommandCode AI（OpenAI 兼容 chat/completions，
+--   key 在 config/secrets.lua，gitignore 不提交）
+-- 模型注意：claude-*/gpt-5.6-luna 当前套餐不可用（403），可用的是
+--   zai-org/GLM-5.2（默认）、deepseek/deepseek-v4-pro、deepseek-v4-flash、
+--   moonshotai/Kimi-K3、Qwen/Qwen3.8-Max 等。切换用 <leader>am。
 
 return {
   {
@@ -14,12 +17,12 @@ return {
       "MunifTanjim/nui.nvim",
     },
     opts = function()
-      -- 本地密钥文件（不入库）：设置 vim.env.ARK_API_KEY
+      -- 本地密钥文件（不入库）：设置 vim.env.COMMANDCODE_API_KEY
       pcall(require, "config.secrets")
 
       return {
-        provider = "ark",
-        model = "ark-code-latest",
+        provider = "commandcode",
+        model = "zai-org/GLM-5.2",
         selection = {
           hint_display = "none",
         },
@@ -27,11 +30,11 @@ return {
           auto_set_keymaps = false,
         },
         providers = {
-          ark = {
+          commandcode = {
             __inherited_from = "openai",
-            api_key_name = "ARK_API_KEY",
-            endpoint = "https://ark.cn-beijing.volces.com/api/coding/v3",
-            model = "ark-code-latest",
+            api_key_name = "COMMANDCODE_API_KEY",
+            endpoint = "https://api.commandcode.ai/provider/v1",
+            model = "zai-org/GLM-5.2",
           },
         },
       }
