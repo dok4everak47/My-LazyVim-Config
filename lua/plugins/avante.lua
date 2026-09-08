@@ -36,6 +36,21 @@ return {
         },
       }
     end,
+    config = function(_, opts)
+      require("avante").setup(opts)
+      -- 隐藏聊天窗口里的中间工具调用卡片（Agent 照常执行，只是不刷屏显示）
+      local ok, Sidebar = pcall(require, "avante.sidebar")
+      local okh, Helpers = pcall(require, "avante.history.helpers")
+      if ok and okh then
+        local orig_get_message_lines = Sidebar.get_message_lines
+        Sidebar.get_message_lines = function(self, ctx, message, messages, ignore_record_prefix)
+          if Helpers.is_tool_use_message(message) then
+            return {}
+          end
+          return orig_get_message_lines(self, ctx, message, messages, ignore_record_prefix)
+        end
+      end
+    end,
     keys = {
       { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "Ask Avante" },
       { "<leader>ac", "<cmd>AvanteChat<CR>", desc = "Chat with Avante" },
