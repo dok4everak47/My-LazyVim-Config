@@ -41,10 +41,15 @@ return {
         if ab and bb then
           return ab < bb
         end
+        -- 一侧有 extra.bufnr 时给确定顺序 (仅 buffers 节点带, 防御性触发, 避免落入 path 比较)
+        if ab or bb then
+          return ab ~= nil
+        end
         if a.type == b.type then
-          return a.path < b.path
+          -- 兜底: message/terminal 等节点可能无 path, 回落 name, 避免 nil < string 抛错
+          return (a.path or a.name) < (b.path or b.name)
         else
-          return a.type < b.type
+          return (a.type or "") < (b.type or "")
         end
       end
 
