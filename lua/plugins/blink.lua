@@ -100,7 +100,11 @@ return {
             local l = vim.api.nvim_get_current_line()
             local r = l:sub(p[2] + 1, p[2] + 1)
             if r == '"' or r == "'" or r == ")" or r == "]" then
-              vim.api.nvim_win_set_cursor(0, { p[1], p[2] + 1 })
+              -- ⚠️ 必须 vim.schedule: blink 的 <Tab> 映射是 expr 映射, 在 expr 回调里
+              -- 同步移光标会被 nvim 丢弃 (实测: 直接调 callback 能动, 真按键纹丝不动)
+              vim.schedule(function()
+                vim.api.nvim_win_set_cursor(0, { p[1], p[2] + 1 })
+              end)
               return true
             end
             return false
@@ -108,16 +112,18 @@ return {
 
           -- 有会话: 跳 snippet 占位优先。
           if has_session then
-            -- ── 行首 guard (2026-09-11): 修「括号内 <CR> 换行 → 退格回行首 → Tab 不能缩进」──
-            -- 在占位符里按 <CR>, 换行符成为占位符文本的一部分 → node.mark 变跨行;
-            -- 之后退格回到行首(0 列)时会话还活着, Tab 被当成「跳下个占位符」直接跳走,
-            -- 该发生的缩进没有发生。
-            -- 判定 = 占位符跨行(mark 起止不在同一行) + 光标在 0 列 → 判定为残留会话:
-            -- 清掉会话 + 放行 fallback(缩进)。单行占位符(哪怕正好从行首开始)不受
-            -- 影响, 占位符跳转行为完全保留。
+            -- ── 跨行占位符 guard (2026-09-11) ──
+            -- 在占位符里按 <CR>, 换行符会成为占位符文本的一部分 → node.mark 跨行。
+            -- 此后 Tab 若还当成「跳下个占位符」, 光标会从当前编辑行跳到下一个占位符
+            -- 所在的行 (用户报的「用 tab 缩进时会跳到别的行」), 甚至跳到 snippet 末尾。
+            -- 判定 = 当前占位符跨行 (mark 起止不在同一行) → 用户已在里面自由换行编辑,
+            -- 会话不再代表「占位符巡览」: 清掉会话 + 放行 fallback(缩进)。
+            -- ⚠️ 不能只判「光标在行首(0 列)」: 新行有自动缩进(如 rust 4 空格), 光标
+            -- 停在缩进末尾 4 列, 那个条件根本不成立 (2026-09-11 第一版就踩了这个)。
+            -- 单行占位符不受影响 → 占位符跳转/Tab-out 行为完全保留。
             if node.type ~= 8 and node.type ~= 0 then
               local okg, gb, ge = pcall(node.mark.pos_begin_end, node.mark)
-              if okg and gb and ge and ge[1] > gb[1] and vim.api.nvim_win_get_cursor(0)[2] == 0 then
+              if okg and gb and ge and ge[1] > gb[1] then
                 pcall(ls.unlink_current)
                 return false
               end
