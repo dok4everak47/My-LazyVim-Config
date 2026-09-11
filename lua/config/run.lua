@@ -75,10 +75,78 @@ local RUNNERS = {
   racket = "cd {dir} && {direnv_exec}racket {name}",
 }
 
+-- ── rust/cargo：一个包里多个可运行目标时点名 --bin (2026-09-11) ──
+-- 症状：`cargo run` 报 "could not determine which binary to run"（learning/ 里每个练习
+-- 都是 src/bin/ 下一个独立 binary，共 5 个）。规则：
+--   ① 当前文件本身是某个 bin 的源码 → `cargo run --bin <该 bin 名>`（最精确）；
+--   ② 包里只有一个 bin → 保持裸 `cargo run`（cargo 自己会选，不加冗余参数）；
+--   ③ 多个 bin 且当前文件不是任何 bin 的源码 → 无法确定，报清楚有哪些可选。
+-- bin 名来源：src/main.rs → Cargo.toml 的 [package] name；src/bin/x.rs → x；
+--            src/bin/x/main.rs → x。
+-- 返回 (bins 列表, 当前文件对应的 bin 名或 nil)
+local function cargo_bins(root, path)
+  local bins, seen = {}, {}
+  local function add(name)
+    if name and name ~= "" and not seen[name] then
+      seen[name] = true
+      bins[#bins + 1] = name
+    end
+  end
+
+  local main_rs = root .. "/src/main.rs"
+  local pkg_name = nil
+  if vim.fn.filereadable(main_rs) == 1 then
+    -- 只认 [package] 段里的第一处 name（不引 TOML 解析器，够用且不会误读依赖段）
+    local in_pkg = false
+    for _, line in ipairs(vim.fn.readfile(root .. "/Cargo.toml")) do
+      local sec = line:match("^%s*%[([^%]]+)%]")
+      if sec then
+        in_pkg = (sec == "package")
+      elseif in_pkg then
+        pkg_name = pkg_name or line:match('^%s*name%s*=%s*"(.-)"')
+      end
+    end
+    add(pkg_name or vim.fn.fnamemodify(root, ":t"))
+  end
+
+  local bin_dir = root .. "/src/bin"
+  for _, f in ipairs(vim.fn.glob(bin_dir .. "/*.rs", false, true)) do
+    add(vim.fn.fnamemodify(f, ":t:r"))
+  end
+  for _, f in ipairs(vim.fn.glob(bin_dir .. "/*/main.rs", false, true)) do
+    add(vim.fn.fnamemodify(vim.fn.fnamemodify(f, ":h"), ":t"))
+  end
+
+  local bin_of = nil
+  if path == main_rs then
+    bin_of = pkg_name or vim.fn.fnamemodify(root, ":t")
+  elseif path:sub(1, #bin_dir + 1) == bin_dir .. "/" then
+    local rel = path:sub(#bin_dir + 2)
+    bin_of = rel:match("^([^/]+)/main%.rs$") or vim.fn.fnamemodify(path, ":t:r")
+  end
+  return bins, bin_of
+end
+
+-- 项目命令微调钩子。第二个返回值是「说不清」时给人看的提示（M.resolve 会转成 error）。
+local function cargo_refine(root, path, base)
+  local bins, bin_of = cargo_bins(root, path)
+  if #bins <= 1 then
+    -- 只有一个可跑目标：cargo 自己会选，不加多余参数（单 bin 项目命令与以前完全一致）
+    return base
+  end
+  if bin_of then
+    return base .. " --bin " .. sh(bin_of)
+  end
+  return nil, "这个 crate 有多个可运行目标，cargo 不会替你选："
+    .. table.concat(bins, ", ")
+    .. "。打开对应源文件再按 <leader>r（或改用 --bin）。"
+end
+
 -- 项目级映射：只有「整项目运行」语义才启用（单文件命令在 Cargo/npm 项目里会失败）。
 -- marker = 根标记文件；script = 可选，要求 package.json 里有该 scripts 项才用项目命令。
+-- refine = 可选，按当前文件微调项目命令（返回 cmd 字符串；返回 nil 表示按原 cmd 跑）。
 local PROJECTS = {
-  rust = { marker = "Cargo.toml", cmd = "cargo run" },
+  rust = { marker = "Cargo.toml", cmd = "cargo run", refine = cargo_refine },
   go = { marker = "go.mod", cmd = "go run ." },
   c = { marker = "Makefile", cmd = "make" },
   cpp = { marker = "Makefile", cmd = "make" },
@@ -133,8 +201,17 @@ function M.resolve(ft, path)
   if proj then
     local root = find_up(dir, proj.marker)
     if root and (not proj.script or has_script(root, proj.marker, proj.script)) then
+      local cmd = proj.cmd
+      if proj.refine then
+        local refined, hint = proj.refine(root, path, cmd)
+        if not refined then
+          -- 无法确定跑哪个目标（如 cargo 多 bin）：不瞎猜，直接把候选告诉人
+          return { error = hint }
+        end
+        cmd = refined
+      end
       return {
-        cmd = "cd " .. sh(root) .. " && " .. direnv_exec(root) .. proj.cmd,
+        cmd = "cd " .. sh(root) .. " && " .. direnv_exec(root) .. cmd,
         cwd = root,
         kind = "project",
       }
@@ -172,6 +249,10 @@ function M.run(position)
   end
 
   local res = M.resolve(ft, path)
+  if res and res.error then
+    vim.notify("run: " .. res.error, vim.log.levels.WARN)
+    return
+  end
   if not res then
     vim.notify(
       "no run mapping for filetype: " .. (ft == "" and "none" or ft)
