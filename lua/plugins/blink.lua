@@ -36,12 +36,22 @@ return {
           -- 只 block 已自定义覆盖的: if/let/for/while/match/loop/impl/struct/enum。
           -- ⚠️ else 不 block — 无自定义 else。fn 已 block: 自定义 fn 加回 (2026-09-06), 只留自定义。
           -- 2026-09-06
+          -- 2026-09-06: sortText 屏蔽 — 真实"按选择频次排序"前提
+          -- RA 给每个补全项带 sortText (LSP server 端的"应选顺序"，如把私有方法排后)，
+          -- blink fuzzy 的 default sorts = { 'score', 'sort_text' } 中 sort_text 在
+          -- score 接近时强制接管排序, 完全压过 frecency 加成 (frecency 最多 +6, fuzzy
+          -- match 分动辄几十上百, 一旦 sortText 介入 frecency 几乎无效)。
+          -- 屏蔽 sortText 后排序 = match_score + frecency_score + nearby + score_offset,
+          -- 高频选过的项会稳定浮到顶端。
           transform_items = function(_, items)
             local blocked = {
               ["if"] = true, ["let"] = true, ["let mut"] = true, ["for"] = true,
               ["while"] = true, ["match"] = true, ["loop"] = true, ["impl"] = true,
               ["struct"] = true, ["enum"] = true, ["fn"] = true,
             }
+            for _, item in ipairs(items) do
+              item.sortText = nil
+            end
             local ret = {}
             for _, item in ipairs(items) do
               local is_snippet = item.kind == vim.lsp.protocol.CompletionItemKind.Snippet
