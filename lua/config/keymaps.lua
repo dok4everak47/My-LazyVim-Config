@@ -100,44 +100,18 @@ lmap("<leader>bl", function()
   vim.cmd("bn | if &bt == 'nofile' | bn | endif")
 end, { desc = "Next buffer in window" })
 
--- ── 代码运行（python/cpp/c，原 polish.lua setup_language_specific_execution）──
--- 按文件类型运行当前文件（原 <leader>r 行为）；保留 :RunCode 亦可
-local function run_current()
-  vim.cmd("write")
-  local ft = vim.bo.filetype
-  if ft == "python" then
-    vim.cmd("!python %")
-  elseif ft == "cpp" then
-    vim.cmd("!g++ -std=c++17 % -o %:r && ./%:r")
-  elseif ft == "c" then
-    vim.cmd("!gcc % -o %:r && ./%:r")
-  else
-    vim.cmd("!echo 'no run mapping for filetype: " .. (ft == "" and "none" or ft) .. "'")
-  end
-end
+-- ── 代码运行（VS Code Code Runner 式，2026-09-11 方案 B）──
+-- 逻辑全在 lua/config/run.lua：filetype → 命令映射 + 项目根探测（Cargo.toml/go.mod/
+-- Makefile/package.json-with-start），需要 devShell 的语言自动走 direnv exec。
+-- 命令一律显式用 bash -c 执行（登录 shell 是 nushell，nu 不支持 `cd X && Y`）。
+lmap("<leader>r", function()
+  require("config.run").run("float")
+end, { desc = "Run file / project (float)" })
 
-lmap("<leader>r", run_current, { desc = "Run current file" })
-
--- 终端内运行（垂直 split + terminal）
-local function run_current_terminal()
-  vim.cmd("write")
-  local ft = vim.bo.filetype
-  local cmd
-  if ft == "python" then
-    cmd = "python %"
-  elseif ft == "cpp" then
-    cmd = "g++ -std=c++17 % -o %:r && ./%:r"
-  elseif ft == "c" then
-    cmd = "gcc % -o %:r && ./%:r"
-  end
-  if cmd then
-    vim.cmd("vsplit | terminal " .. cmd)
-  else
-    vim.notify("No run mapping for filetype: " .. ft, vim.log.levels.WARN)
-  end
-end
-
-lmap("<leader>R", run_current_terminal, { desc = "Run current file in terminal" })
+-- 右侧分屏跑，输出常驻不遮挡代码
+lmap("<leader>R", function()
+  require("config.run").run("right")
+end, { desc = "Run file / project (split)" })
 
 -- ── 终端开在当前文件目录（原 polish.lua setup_terminal_file_dir）──
 -- LazyVim 默认用 snacks terminal。保持 <leader>tf/th（浮动/水平）。
