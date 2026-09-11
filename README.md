@@ -57,7 +57,7 @@ nvim
 | `<leader>fs` | 当前文件符号搜索（VS Code Cmd+Shift+O 风格） |
 | `<leader>bn` / `bp` / `bb` / `1-9` | 缓冲区切换 |
 | `gi` | LSP 实现跳转 |
-| `jk` | 退出插入模式并保存 |
+| `jk` | 退出插入模式并强制保存（`:w!`，不自动格式化） |
 | `Cmd+S` / `Ctrl+S` | 保存（所有模式） |
 | `<C-space>` / `<BS>` | Treesitter 增量选择 |
 
