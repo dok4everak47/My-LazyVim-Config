@@ -108,6 +108,20 @@ return {
 
           -- 有会话: 跳 snippet 占位优先。
           if has_session then
+            -- ── 行首 guard (2026-09-11): 修「括号内 <CR> 换行 → 退格回行首 → Tab 不能缩进」──
+            -- 在占位符里按 <CR>, 换行符成为占位符文本的一部分 → node.mark 变跨行;
+            -- 之后退格回到行首(0 列)时会话还活着, Tab 被当成「跳下个占位符」直接跳走,
+            -- 该发生的缩进没有发生。
+            -- 判定 = 占位符跨行(mark 起止不在同一行) + 光标在 0 列 → 判定为残留会话:
+            -- 清掉会话 + 放行 fallback(缩进)。单行占位符(哪怕正好从行首开始)不受
+            -- 影响, 占位符跳转行为完全保留。
+            if node.type ~= 8 and node.type ~= 0 then
+              local okg, gb, ge = pcall(node.mark.pos_begin_end, node.mark)
+              if okg and gb and ge and ge[1] > gb[1] and vim.api.nvim_win_get_cursor(0)[2] == 0 then
+                pcall(ls.unlink_current)
+                return false
+              end
+            end
             local pos = vim.api.nvim_win_get_cursor(0)
             local row, col = pos[1] - 1, pos[2]
             -- exitNode(type=8)/0 是虚拟节点 (展开后会话刚建或编辑后 current node
