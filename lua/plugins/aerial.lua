@@ -24,8 +24,12 @@ return {
           if item.kind == "Function" or item.kind == "Method" then
             local s, e = item.lnum or 0, item.end_lnum or item.lnum or 0
             local count = 0
-            for l = s, math.min(e, #lines - 1) do
-              local t = lines[l + 1] and lines[l + 1]:match("^%s*(%a+)") -- 0-based l → 1-based 行
+            -- aerial 的 lnum/end_lnum 均为 1-based 且含端点 (lsp: start.line+1/end.line+1;
+            -- treesitter: start_row+1/end_row+1, 已对照源码核实)。nvim_buf_get_lines 返回的
+            -- lines[1] = 第 1 行, 行号 l 的文本即 lines[l], 无需 +1 偏移。旧代码 lines[l+1]
+            -- 会跳过第 s 行 (单行函数体整个漏数) 且多扫 e+1 一行, 已修。
+            for l = math.max(s, 1), math.min(e, #lines) do
+              local t = lines[l] and lines[l]:match("^%s*(%a+)")
               if t == "for" or t == "while" or t == "loop" then
                 count = count + 1
               end
