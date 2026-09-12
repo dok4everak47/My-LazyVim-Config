@@ -7,6 +7,11 @@ local function apply_dashboard_hl()
   -- 标题红色 (显式色值, 不链接)
   pcall(vim.api.nvim_set_hl, 0, "SnacksDashboardHeader", { fg = "#E82424", default = true })
   pcall(vim.api.nvim_set_hl, 0, "SnacksDashboardHeaderIcon", { fg = "#E82424", default = true })
+  -- dashboard 窗口背景透明: bg = "none" 让终端默认背景透出来
+  -- (Kaku window_background_opacity=0.75; wezterm 把 app 显式设的 bg 当"非默认背景色",
+  --  用 text_background_opacity=1.0 不透明绘制, 所以必须留空 bg 才有半透明效果)
+  local n = vim.api.nvim_get_hl(0, { name = "Normal" })
+  pcall(vim.api.nvim_set_hl, 0, "SnacksDashboardNormal", { fg = n.fg, bg = "none" })
   -- 其余组链接到主题通用高亮
   local map = {
     SnacksDashboardFooter = "Comment",
@@ -15,7 +20,6 @@ local function apply_dashboard_hl()
     SnacksDashboardIcon = "Special",
     SnacksDashboardTitle = "Title",
     SnacksDashboardButton = "Normal",
-    SnacksDashboardNormal = "Normal",
     SnacksDashboardTerminal = "NormalFloat",
   }
   for group, link in pairs(map) do
