@@ -62,6 +62,15 @@ end
 return {
   {
     "mrcjkb/rustaceanvim",
+    -- VS Code (vscode-neovim) 里不启动 rustaceanvim (2026-09-13)：
+    -- VS Code 自带的 rust-analyzer 扩展已经提供全部 LSP 能力（补全/符号/格式化），
+    -- 而 vscode-neovim 会加载这份完整 nvim 配置 → 再起一份 rustaceanvim 的 RA
+    -- 等于同一个项目两个 RA 同时索引（实测各 ~700MB RSS + 一次完整索引）。
+    -- 用函数形式：vscode-neovim 通过 --cmd 设 g:vscode=1（数字，非 true），
+    -- 判 nil 才可靠；终端 nvim 里 g:vscode 为 nil → 照常启动。
+    enabled = function()
+      return vim.g.vscode == nil
+    end,
     opts = function(_, opts)
       -- devShell 兜底：注入 PATH 并解析 rust-analyzer 绝对路径
       local ra_path = ensure_devshell_env()
@@ -72,6 +81,16 @@ return {
       opts.server = opts.server or {}
       opts.server.default_settings = opts.server.default_settings or {}
       local ra = opts.server.default_settings["rust-analyzer"] or {}
+
+      -- RA 用自己的 target 子目录 (2026-09-13)：
+      -- 默认 RA 的 cargo check/clippy 与用户 cargo build/test/run 共写 target/，
+      -- 实测并发时会互相出现 "Blocking waiting for file lock on build directory"。
+      -- targetDir = true（RA 官方开关）= 产物落到 target/ 的独立子目录，
+      -- 代价仅一次性重编依赖（实测 2.5s / 27MB），换来两边互不阻塞。
+      ra.cargo = vim.tbl_deep_extend("force", ra.cargo or {}, {
+        targetDir = true,
+      })
+
       ra.completion = vim.tbl_deep_extend("force", ra.completion or {}, {
         callable = {
           snippets = "fill_arguments",
