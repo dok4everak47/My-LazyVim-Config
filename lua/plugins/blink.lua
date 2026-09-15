@@ -134,62 +134,89 @@ return {
             -- 回退到 exit)。不能直接 jump (exit.next=nil → jump 会清会话 = 没反应)。
             -- 改为: 遍历 snippet 的 insertNode, 找光标所在/之后的占位符设为 current,
             -- 再 jump — 光标在最后占位时 jump 不到 → 光标移到 snippet 末尾 (分号后)。
+            --
+            -- ── 死会话 guard (2026-09-15) ──
+            -- exitNode 会话只对「光标还在这个 snippet 里/末尾」有意义 (跳完最后占位按 Tab
+            -- 收尾)。实测残留来源: 接受无占位符的 snippet 型补全 (如枚举变体 Mul)、跳到最后
+            -- 占位后光标走到别处 —— session.current_nodes 仍指着这个 exitNode。旧代码不看
+            -- 光标位置, 于是 (a) 直接 nvim_win_set_cursor 到该 snippet 末尾 → 用户报的
+            -- 「按 tab 就跳到别的行」; (b) snippet 没有占位符时静默吞掉 Tab 不缩进。
+            -- 判据: 光标在 snippet mark 范围外 → 死会话 → 清会话 + 放行 fallback(缩进)。
             if node.type == 8 or node.type == 0 then
-              vim.schedule(function()
-                local snip = node.parent and node.parent.snippet
-                if not snip then
+              local snip = node.parent and node.parent.snippet
+              if not snip then
+                pcall(ls.unlink_current)
+                return false
+              end
+              local ok_range, s_begin, s_end = pcall(snip.mark.pos_begin_end, snip.mark)
+              if ok_range and s_begin and s_end then
+                local near_snip = (row > s_begin[1] or (row == s_begin[1] and col >= s_begin[2]))
+                  and (row < s_end[1] or (row == s_end[1] and col <= s_end[2] + 1))
+                if not near_snip then
+                  -- 死会话: 行为完全等同「没有会话」—— 先试 tabout, 再 fallback(缩进)
                   pcall(ls.unlink_current)
-                  return
+                  if try_tabout() then
+                    return true
+                  end
+                  return false
                 end
-                -- 递归收集所有 insertNode (type=2)
-                local inserts = {}
-                local function collect(n)
-                  for _, child in ipairs(n.nodes or {}) do
-                    if child.type == 2 then
-                      inserts[#inserts + 1] = child
-                    elseif child.nodes then
-                      collect(child)
-                    end
+              end
+              -- 同步收集所有 insertNode (type=2): 只读, 用来判断「有没有占位符可跳」,
+              -- 决定要不要吞掉这次 Tab (只有确定要跳时才返回 true)。
+              local inserts = {}
+              local function collect(n)
+                for _, child in ipairs(n.nodes or {}) do
+                  if child.type == 2 then
+                    inserts[#inserts + 1] = child
+                  elseif child.nodes then
+                    collect(child)
                   end
                 end
-                collect(snip)
-                if #inserts == 0 then
-                  pcall(ls.unlink_current)
-                  return
+              end
+              collect(snip)
+              if #inserts == 0 then
+                -- 无占位符可跳 (无 tabstop 的 snippet): 清会话, 行为等同「没有会话」
+                pcall(ls.unlink_current)
+                if try_tabout() then
+                  return true
                 end
-                -- 找光标所在占位符 (row/col 0-based)
-                local pos = vim.api.nvim_win_get_cursor(0)
-                local row, col = pos[1] - 1, pos[2]
-                local target
-                for _, ins in ipairs(inserts) do
-                  local okm, b, e = pcall(ins.mark.pos_begin_end, ins.mark)
-                  if okm and b and e then
-                    local in_b = row > b[1] or (row == b[1] and col >= b[2])
-                    local in_e = row < e[1] or (row == e[1] and col <= e[2])
-                    if in_b and in_e then
-                      target = ins
-                      break
-                    end
-                  end
-                end
-                -- 手动把 current node 设为光标所在占位, 然后正常 jump
-                if target then
-                  session.current_nodes[buf] = target
-                  vim.schedule(function()
-                    if ls.jumpable(1) then
-                      ls.jump(1)
-                      return
-                    end
-                    -- 最后占位无下一跳: 光标移到 snippet 末尾收尾
-                    local okp, p = pcall(function() return snip.mark:pos_end() end)
-                    if okp and p and p[1] ~= nil and p[2] ~= nil then
-                      vim.api.nvim_win_set_cursor(0, { p[1] + 1, p[2] })
-                    end
+                return false
+              end
+              -- 光标所在占位符 (row/col 0-based); 跨行占位符 = 用户在占位符里自由换行编辑了
+              -- (与上面 type=2 分支同一判据) → 清会话 + 缩进, 不跳
+              local target
+              for _, ins in ipairs(inserts) do
+                local okm, b, e = pcall(ins.mark.pos_begin_end, ins.mark)
+                if okm and b and e
+                  and (row > b[1] or (row == b[1] and col >= b[2]))
+                  and (row < e[1] or (row == e[1] and col <= e[2])) then
+                  if e[1] > b[1] then
                     pcall(ls.unlink_current)
-                  end)
-                  return
+                    return false
+                  end
+                  target = ins
+                  break
                 end
-                -- 光标不在任何占位内 (如占位后/分号前) → 移到 snippet 末尾收尾
+              end
+              if target then
+                -- 手动把 current node 设为光标所在占位, 然后正常 jump
+                session.current_nodes[buf] = target
+                vim.schedule(function()
+                  if ls.jumpable(1) then
+                    ls.jump(1)
+                    return
+                  end
+                  -- 最后占位无下一跳: 光标移到 snippet 末尾收尾
+                  local okp, p = pcall(function() return snip.mark:pos_end() end)
+                  if okp and p and p[1] ~= nil and p[2] ~= nil then
+                    vim.api.nvim_win_set_cursor(0, { p[1] + 1, p[2] })
+                  end
+                  pcall(ls.unlink_current)
+                end)
+                return true
+              end
+              -- 光标在 snippet 内但不在任何占位符内 (如占位后/分号前) → 移到 snippet 末尾收尾
+              vim.schedule(function()
                 local okp, p = pcall(function() return snip.mark:pos_end() end)
                 if okp and p and p[1] ~= nil and p[2] ~= nil then
                   vim.api.nvim_win_set_cursor(0, { p[1] + 1, p[2] })
