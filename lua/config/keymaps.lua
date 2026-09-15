@@ -26,11 +26,22 @@ else
   map("i", "jk", function()
     vim.cmd("stopinsert")
     vim.schedule(function()
-      -- 1) 清理残留 LuaSnip snippet（若有），避免退出后 Tab 被当成跳占位
+      -- 1) 清理残留 LuaSnip snippet（若有），避免退出后 Tab/S-Tab 被当成跳占位
+      -- ⚠️ 判据必须是「有没有会话」(session.current_nodes)，不能用 ls.expand_or_jumpable()：
+      -- 后者 = expandable() or jumpable(1)，而「死会话」(current node 是 exitNode、光标已
+      -- 走开的 snippet) 两个都为 false → 残留永远清不掉，一路攒着，下次 Tab/<S-Tab> 就按那个
+      -- 旧 snippet 的状态乱动（2026-09-15 实测：jk 后 has_session 仍为 true、jumpable(-1) 仍真）。
+      -- unlink 之后再显式置 nil：unlink_current 会把 current 设成「相邻节点」(可能已死)，
+      -- 只 unlink 不置 nil 仍会留下假会话。
       pcall(function()
         local ls_ok, ls = pcall(require, "luasnip")
-        if ls_ok and ls.expand_or_jumpable() then
-          ls.unlink_current()
+        local sess_ok, session = pcall(require, "luasnip.session")
+        if ls_ok and sess_ok then
+          local buf = vim.api.nvim_get_current_buf()
+          if session.current_nodes[buf] then
+            pcall(ls.unlink_current)
+            session.current_nodes[buf] = nil
+          end
         end
       end)
 

@@ -225,38 +225,77 @@ return {
               end)
               return true
             end
+            -- ── 光标所在占位符 (2026-09-15) ──
+            -- 跳转的唯一前提 = 「光标在某个占位符内」, 而不是「光标在 current node 内」。
+            -- current node 会滞后 (鼠标点到 / 跳到了同一个 snippet 的别的占位符), 旧代码
+            -- 这时走「不在占位符内」分支 → 直接清会话 + 缩进, 不跳; 同一个用户动作
+            -- (在占位符里按 Tab) 行为随隐形的 session 状态而变。改为: current node 不中
+            -- 就扫整棵 snippet 树找光标真正所在的占位符 (与 exitNode 分支同一策略)。
+            local target
             local okm, begin_pos, end_pos = pcall(node.mark.pos_begin_end, node.mark)
-            if okm and begin_pos and end_pos then
-              local in_node = row > begin_pos[1] or (row == begin_pos[1] and col >= begin_pos[2])
-              local in_node_end = row < end_pos[1] or (row == end_pos[1] and col <= end_pos[2])
-              if in_node and in_node_end then
-                -- 光标在占位符内 → 跳下一占位 (tabout 不抢)
-                vim.schedule(function()
-                  local jumped = false
-                  if ls.jumpable(1) then
-                    ls.jump(1)
-                    jumped = true
-                  end
-                  local node = session.current_nodes[buf]
-                  -- 判断是否已到 snippet 末尾: 无下一占位可跳 / current 是 exitNode /
-                  -- 会话已结束。此时光标应落在 snippet 末尾 (分号后)。
-                  local at_end = not ls.in_snippet() or not jumped
-                    or (node and node.type == 8)
-                  if at_end then
-                    -- 用 node 链找 snippet, 光标移到 snippet mark 结束位
-                    local snip = node and node.parent and node.parent.snippet
-                    if snip and snip.mark then
-                      local okp, p = pcall(function() return snip.mark:pos_end() end)
-                      if okp and p and p[1] ~= nil and p[2] ~= nil then
-                        vim.api.nvim_win_set_cursor(0, { p[1] + 1, p[2] })
+            if okm and begin_pos and end_pos
+              and (row > begin_pos[1] or (row == begin_pos[1] and col >= begin_pos[2]))
+              and (row < end_pos[1] or (row == end_pos[1] and col <= end_pos[2])) then
+              target = node
+            else
+              local snip_cur = node.parent and node.parent.snippet
+              if snip_cur then
+                local function scan(n)
+                  for _, child in ipairs(n.nodes or {}) do
+                    if child.type == 2 then
+                      local ok2, b2, e2 = pcall(child.mark.pos_begin_end, child.mark)
+                      if ok2 and b2 and e2
+                        and (row > b2[1] or (row == b2[1] and col >= b2[2]))
+                        and (row < e2[1] or (row == e2[1] and col <= e2[2])) then
+                        target = child
+                        return
                       end
+                      if child.nodes then
+                        scan(child)
+                      end
+                    elseif child.nodes then
+                      scan(child)
                     end
-                    pcall(ls.unlink_current)
-                    return
                   end
-                end)
-                return true
+                end
+                scan(snip_cur)
               end
+            end
+            if target then
+              -- 跨行占位符 = 用户在占位符里自由换行编辑了 (与分支开头同一判据)
+              -- → 清会话 + 放行 fallback(缩进), 不跳
+              local okt, tb, te = pcall(target.mark.pos_begin_end, target.mark)
+              if okt and tb and te and te[1] > tb[1] then
+                pcall(ls.unlink_current)
+                return false
+              end
+              -- 光标在占位符内 → 跳下一占位 (tabout 不抢)
+              session.current_nodes[buf] = target
+              vim.schedule(function()
+                local jumped = false
+                if ls.jumpable(1) then
+                  ls.jump(1)
+                  jumped = true
+                end
+                local node = session.current_nodes[buf]
+                -- 判断是否已到 snippet 末尾: 无下一占位可跳 / current 是 exitNode /
+                -- 会话已结束。此时光标应落在 snippet 末尾 (分号后)。
+                local at_end = not ls.in_snippet() or not jumped
+                  or (node and node.type == 8)
+                if at_end then
+                  -- 用 node 链找 snippet, 光标移到 snippet mark 结束位
+                  local snip = node and node.parent and node.parent.snippet
+                  if snip and snip.mark then
+                    local okp, p = pcall(function() return snip.mark:pos_end() end)
+                    if okp and p and p[1] ~= nil and p[2] ~= nil then
+                      vim.api.nvim_win_set_cursor(0, { p[1] + 1, p[2] })
+                    end
+                  end
+                  pcall(ls.unlink_current)
+                  return
+                end
+              end)
+              return true
             end
             -- 光标不在占位符内: 试 tabout; 不中 → 清会话放行
             if try_tabout() then
@@ -280,8 +319,38 @@ return {
         end,
         "fallback",
       }
-      -- S-Tab：snippet 反向 / 反缩进
-      opts.keymap["<S-Tab>"] = { "snippet_backward", "fallback" }
+      -- S-Tab：snippet 反向 / 反缩进 (2026-09-15 改成自带 cursor 判据的自定义 fn)
+      -- ⚠️ 原来是 blink 的 `snippet_backward`: 其 luasnip 预设用 `ls.jumpable(-1)` 判断,
+      -- **完全不看光标位置** —— current node 只要是 exitNode (死会话), jumpable(-1) 就为
+      -- true, S-Tab 会把光标从当前行搬到那个(早已走开的) snippet 的最后一个占位符所在行。
+      -- 这就是 Tab 那个「跳到别的行」的同一个洞, 只是键不同 (T1 实测: 光标 {5,14} → {2,20})。
+      -- 新判据: 只有光标确实在这个 snippet 的占位符区域内 (locally_jumpable(-1) =
+      -- in_snippet() and jumpable(-1)) 才反向跳; 否则清掉会话, 只反缩进, 绝不移动光标。
+      opts.keymap["<S-Tab>"] = {
+        function()
+          local ok, ls = pcall(require, "luasnip")
+          local sess_ok, session = pcall(require, "luasnip.session")
+          if not (ok and sess_ok) then
+            return false
+          end
+          local buf = vim.api.nvim_get_current_buf()
+          if not session.current_nodes[buf] then
+            return false -- 无会话 → fallback (反缩进)
+          end
+          if ls.locally_jumpable(-1) then
+            vim.schedule(function()
+              if ls.jumpable(-1) then
+                ls.jump(-1)
+              end
+            end)
+            return true
+          end
+          -- 死会话 (光标不在该 snippet 内) → 清掉, 放行 fallback
+          pcall(ls.unlink_current)
+          return false
+        end,
+        "fallback",
+      }
       -- CR：菜单可见 -> 接受补全；否则换行（VS Code 同款：Enter 确定）。
       -- 2026-09-04 移除 accept_with_semicolon：补全后不再自动补 ';'（用户不想要）。
       opts.keymap["<CR>"] = { "accept", "fallback" }
