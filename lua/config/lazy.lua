@@ -27,8 +27,12 @@ require("lazy").setup({
       "LazyVim/LazyVim",
       import = "lazyvim.plugins",
       opts = {
-        -- Oxocarbon 主题 (2026-09-05; kanagawa-dragon → oxocarbon, IBM 碳黑风)
-        colorscheme = "oxocarbon",
+        -- 主题: 默认 Oxocarbon (2026-09-05; kanagawa-dragon → oxocarbon, IBM 碳黑风)。
+        -- 在 dashboard 里用 "Theme" 项 (键 t) 换过的主题记在 state 文件里, 由
+        -- config/theme.lua 恢复 (换过的主题装不上时自动回默认)。
+        colorscheme = function()
+          vim.cmd.colorscheme(require("config.theme").startup())
+        end,
       },
     },
     -- 可选 extras（对齐原 AstroNvim 功能面）

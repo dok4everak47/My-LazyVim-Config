@@ -44,8 +44,36 @@ return {
   {
     "snacks.nvim",
     optional = true,
-    opts = function()
-      -- 确保 dashboard 打开时上面 autocmd 已注册 (snacks 加载即可)
+    opts = function(_, opts)
+      -- dashboard 加 "Theme" 项 (2026-09-16): 打开 snacks 配色 picker (实时预览)
+      -- snacks/lazy 的 opts 合并是按 key 递归并, 数组是「按索引并」→ 直接换掉整个 keys 会
+      -- 残留 LazyVim 的多余项, 所以这里往 LazyVim 那份列表里插, 不重写。
+      local keys = vim.tbl_get(opts or {}, "dashboard", "preset", "keys")
+      if type(keys) ~= "table" then
+        return
+      end
+      for _, item in ipairs(keys) do
+        if item.key == "t" or item.desc == "Theme" then
+          return -- 已经加过 (opts 函数重复执行时不重复插入)
+        end
+      end
+      local pos = #keys + 1
+      for i, item in ipairs(keys) do
+        if item.key == "q" then -- 排在 Quit 前面
+          pos = i
+          break
+        end
+      end
+      table.insert(keys, pos, {
+        icon = "󰏘 ",
+        key = "t",
+        desc = "Theme",
+        action = function()
+          require("config.theme").pick()
+        end,
+      })
+      -- 上面 autocmd 的注册时机: snacks 一加载就注册 (本 spec lazy=false 的默认),
+      -- dashboard 打开时必然已经在。
     end,
   },
 }
