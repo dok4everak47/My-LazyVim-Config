@@ -54,7 +54,16 @@ return {
   { "thesimonho/kanagawa-paper.nvim", lazy = true },
   { "patstockwell/vim-monokai-tasty", lazy = true },
   { "ray-x/aurora", lazy = true },
-  { "metalelf0/black-metal-theme-neovim", lazy = true },
+  -- 它的 34 个 light 变体默认被 `trve = true` 挡住: 每次切过去都弹一条 WARN 并强制成 dark。
+  -- 这里必须用 config 而不是 opts —— 它的 lua 模块名是 `black-metal`, 和 repo/目录名不同,
+  -- 走 opts 的话 LazyVim 会 require("black-metal-theme-neovim").setup() → nil 报错 (oxocarbon 那个坑)。
+  {
+    "metalelf0/black-metal-theme-neovim",
+    lazy = true,
+    config = function()
+      require("black-metal").setup({ trve = false })
+    end,
+  },
   { "oskarnurm/koda.nvim", lazy = true },
   { "oxfist/night-owl.nvim", lazy = true },
   { "maxmx03/fluoromachine.nvim", lazy = true },
