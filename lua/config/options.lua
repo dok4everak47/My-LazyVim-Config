@@ -40,9 +40,8 @@ opt.mouse = "a"
 -- 系统剪贴板只由终端层 Cmd+C/V 管理。
 opt.clipboard = ""
 
--- Cmd+S / Ctrl+S 保存（原 astrocore.mappings；2026-09-20 起 i 模式让位给 keymaps.lua 的
--- 「退出插入+清理 snippet+w!+格式化」完整版，这里只保留 n/v 的纯保存）
-for _, mode in ipairs({ "n", "v" }) do
+-- Cmd+S / Ctrl+S 保存（原 astrocore.mappings，三种模式）
+for _, mode in ipairs({ "n", "i", "v" }) do
   vim.keymap.set(mode, "<D-s>", "<cmd>w<CR>", { desc = "Save" })
   vim.keymap.set(mode, "<C-s>", "<cmd>w<CR>", { desc = "Save" })
 end
