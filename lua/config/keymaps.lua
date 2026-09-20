@@ -11,19 +11,19 @@ local lmap = function(lhs, rhs, opts)
 end
 
 
--- ── jk：退出插入模式 + 强制保存 + 格式化 ──
+-- ── Cmd+S / Ctrl+S：退出插入模式 + 强制保存 + 格式化（2026-09-20 由 jk 迁移）──
+-- 原触发键 jk 让插入模式每个 j 都要等 timeoutlen(300ms) 判断是否按 k，弃用。
+-- 换非打印键 Cmd+S/Ctrl+S：0ms 延迟，Ghostty 已 cmd+s=unbind 透传（kitty 键盘协议 → nvim 收到 <D-s>）。
 -- 注：终端 nvim 与 VS Code(vscode-neovim)共用本配置（vscode-neovim 嵌入 nvim 加载完整配置，
 -- 并设 vim.g.vscode=1（数字，用 ~= nil 判定）。
 -- 终端 nvim：完整行为——stopinsert → 清理残留 snippet → w! 强制保存 → 格式化
 --   （rust 且有 cargo → cargo fmt；其余 → LazyVim.format）。每步 pcall 包裹：出错不阻断后续，
 --   保证 w! 一定执行。
--- VS Code：只退 insert + 保存；格式化交给 VS Code 自带 formatOnSave
---   （rust 走 rust-analyzer 扩展，底层也是 rustfmt，与 cargo fmt 结果一致，避免双重格式化）。
+-- VS Code：不映射——Cmd+S 由 VS Code 原生处理（保存 + formatOnSave；rust 走 rust-analyzer
+--   扩展，底层也是 rustfmt，与 cargo fmt 结果一致，避免双重格式化）。
 local in_vscode = vim.g.vscode ~= nil -- vscode-neovim 注入的是 g:vscode=1（数字），用 ~= nil 判定
-if in_vscode then
-  map("i", "jk", "<Esc><cmd>w!<CR>", { desc = "jk exit insert + save (VS Code formats on save)" })
-else
-  map("i", "jk", function()
+if not in_vscode then
+  local exit_save_format = function()
     vim.cmd("stopinsert")
     vim.schedule(function()
       -- 1) 清理残留 LuaSnip snippet（若有），避免退出后 Tab/S-Tab 被当成跳占位
@@ -67,7 +67,9 @@ else
         pcall(LazyVim.format, { force = true })
       end
     end)
-  end, { desc = "jk exit insert + force save + format (rust: cargo fmt)" })
+  end
+  map("i", "<D-s>", exit_save_format, { desc = "Exit insert + force save + format (rust: cargo fmt)" })
+  map("i", "<C-s>", exit_save_format, { desc = "Exit insert + force save + format (rust: cargo fmt)" })
 end
 
 -- ── 缓冲区切换（原 polish.lua setup_buffer_navigation + astrocore）──
