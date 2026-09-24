@@ -33,8 +33,12 @@ return {
         lsp = {
           score_offset = 0,
           -- 屏蔽 RA (rust-analyzer) 的重复关键字 snippet 项, 只留自定义 vscode snippet。
-          -- 只 block 已自定义覆盖的: if/let/for/while/match/loop/impl/struct/enum。
+          -- 只 block 已自定义覆盖的: if/let/while/match/loop/impl/struct/enum。
           -- ⚠️ else 不 block — 无自定义 else。fn 已 block: 自定义 fn 加回 (2026-09-06), 只留自定义。
+          -- ⚠️ for 已从 blocked 移除 (2026-09-23): 自定义 for snippet (~/.config/nvim/snippets/
+          -- rust.json) 存在且能加载, 但在菜单里不总是冒出来; block 掉 RA 的关键字项后就没有
+          -- 任何兜底, 输入 for 菜单为空。保留 RA 的关键字 for 作兜底, 两条同名项靠
+          -- use_label_description 区分 (带描述的 = 自定义 snippet, 无描述的 = RA 关键字)。
           -- 2026-09-06
           -- 2026-09-06: sortText 屏蔽 — 真实"按选择频次排序"前提
           -- RA 给每个补全项带 sortText (LSP server 端的"应选顺序"，如把私有方法排后)，
@@ -45,7 +49,7 @@ return {
           -- 高频选过的项会稳定浮到顶端。
           transform_items = function(_, items)
             local blocked = {
-              ["if"] = true, ["let"] = true, ["let mut"] = true, ["for"] = true,
+              ["if"] = true, ["let"] = true, ["let mut"] = true,
               ["while"] = true, ["match"] = true, ["loop"] = true, ["impl"] = true,
               ["struct"] = true, ["enum"] = true, ["fn"] = true,
             }
