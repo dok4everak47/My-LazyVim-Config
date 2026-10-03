@@ -363,11 +363,14 @@ return {
       opts.completion.list = opts.completion.list or {}
       -- preselect 高亮但不自动插入（VS Code 行为）
       opts.completion.list.selection = { preselect = true, auto_insert = false }
-      -- 灰显预览
+      -- 灰显预览（VS Code 标志）：显式关闭。
       -- ⚠️ 2026-09-04: ghost_text 与 LuaSnip 占位跳转冲突 (extmark 竞争,
       -- 日志 mark.lua:82/35/136 崩溃 + for snippet Tab 跳转插入幽灵文本)。
-      -- 暂关, 观察 Tab 跳转是否恢复稳定。
-      -- opts.completion.ghost_text = { enabled = true }
+      -- ⚠️ 2026-10-03: 只把原来的 `ghost_text = { enabled = true }` 注释掉并不够 ——
+      -- LazyVim 的 blink extra 会设 `ghost_text = { enabled = vim.g.ai_cmp }`，
+      -- 而 vim.g.ai_cmp 在 LazyVim options.lua 里默认 true，所以 ghost text
+      -- 实际上一直是开着的（InsertEnter 实测 vim.g.ai_cmp=true）。显式 false 覆盖之。
+      opts.completion.ghost_text = { enabled = false }
 
       -- 签名提示（blink 原生；LazyVim 默认 signature=false，开之）
       opts.signature = opts.signature or {}
