@@ -259,6 +259,67 @@ lmap("<leader>wb", function()
   vim.notify("scrollbind " .. (on and "OFF" or "ON") .. " (all windows)", vim.log.levels.INFO)
 end, { desc = "Toggle scrollbind (all windows)" })
 
+-- ── 连续视图：A 窗看文件的一部分，B 窗接着看剩下的部分（2026-10-06）──
+-- 原理：scrollbind 保留两窗「首行行号之差」（'scrollopt' 默认含 jump，翻页/大跳也保留，
+-- 去掉 jump 反而会在大跳时丢失差值，别去掉）。所以先把第 2 个窗口摆到「紧接第 1 个窗口
+-- 末行 + 1」再开 scrollbind，之后滚动就像一份文档跨窗口流动（差值恒定）。
+-- 实测(nvim 0.12.4, 200 行文件 split)：上窗 h=11、下窗 topline=12 → 开 scrollbind 后
+-- 上窗滚 5 行得到 top=6 / 下窗 top=17；下窗向上滚 3 行 → 两边一起上移 3 行。
+-- 末行用 line("w$") 取，所以折行(wrap)、折叠也不会错位；多窗口(3 个以上)依次串联。
+-- 调整窗口大小或增删窗口后差值会过期，重新按一次即可。
+-- 键位：<leader>w 是窗口前缀(wd 删窗口 / wm zoom / wb 只联动滚动不重排)，wc = continuous。
+lmap("<leader>wc", function()
+  if vim.bo.buftype ~= "" then
+    vim.notify("连续视图需要普通文件 buffer", vim.log.levels.WARN)
+    return
+  end
+  local buf = vim.api.nvim_get_current_buf()
+  -- 屏幕上同一 buffer 的窗口，按阅读顺序(先行后列)排：上下分屏按行、左右分屏按列
+  local function order()
+    local t = {}
+    for _, inf in ipairs(vim.fn.getwininfo()) do
+      if inf.bufnr == buf then
+        t[#t + 1] = inf
+      end
+    end
+    table.sort(t, function(a, b)
+      if a.winrow == b.winrow then
+        return a.wincol < b.wincol
+      end
+      return a.winrow < b.winrow
+    end)
+    return t
+  end
+  if #order() < 2 then
+    vim.cmd("split") -- 只有一个窗口先下分一个(splitbelow / splitright 已由 LazyVim 设好)
+  end
+  local wins = order()
+  local last = vim.api.nvim_buf_line_count(buf)
+  -- 1) 先解除所有绑定，免得摆位置时互相拽
+  for _, inf in ipairs(wins) do
+    vim.api.nvim_set_current_win(inf.winid)
+    vim.wo.scrollbind = false
+  end
+  -- 2) 依次把每个窗口摆到「接着上一个窗口的末行」
+  local prev_bottom = 0
+  for i, inf in ipairs(wins) do
+    vim.api.nvim_set_current_win(inf.winid)
+    if i == 1 then
+      vim.cmd("normal! gg")
+    else
+      local t = math.min(prev_bottom + 1, last)
+      vim.fn.winrestview({ lnum = t, topline = t, col = 0, curswant = 0 })
+    end
+    prev_bottom = vim.fn.line("w$") -- 该窗口最后一行可见行(含折行/折叠都算对)
+  end
+  -- 3) 全部摆好后再开绑定
+  for _, inf in ipairs(wins) do
+    vim.api.nvim_set_current_win(inf.winid)
+    vim.wo.scrollbind = true
+  end
+  vim.notify("连续视图: " .. #wins .. " 个窗口已串联滚动 (<leader>wb 可取消)", vim.log.levels.INFO)
+end, { desc = "Continuous view: chain windows of one file (scrollbind)" })
+
 -- ── 退出前停 LSP（原 astrocore autocmds VimLeavePre，治孤儿进程）──
 vim.api.nvim_create_autocmd("VimLeavePre", {
   callback = function()
