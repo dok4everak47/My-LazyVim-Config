@@ -246,6 +246,19 @@ vim.opt.guicursor = "n-v-c:block,i:ver50,ci:ver50,ve:ver50,o:block,a:blinkon100"
 map("n", "\\", ":", { desc = "Command line (replaces :)" })
 map("x", "\\", ":", { desc = "Command line (replaces :)" })
 
+-- ── 滚动同步：一键让所有 window 联动滚动（2026-10-06）──
+-- scrollbind 是「窗口选项」：要联动的每个窗口都得设上，所以用 windo 一次全设。
+-- 实测(nvim 0.12.4, 200 行文件 vsplit)：两窗都设后滚任意一侧，另一侧 topline 跟随；
+-- 只设一侧不带动另一侧。想让光标行也一起走，再各窗 :set cursorbind
+-- （cursorbind 只保持相对偏移，贴近文件首尾时会有几行偏差）。
+-- 键位选择：<leader>w 是 LazyVim 的窗口前缀（wd=删窗口、wm=zoom），wb 之前空闲。
+-- 注意 <leader>uS 已被 LazyVim 的 Snacks.toggle.scroll（平滑滚动）占用，别往那放。
+lmap("<leader>wb", function()
+  local on = vim.wo.scrollbind
+  vim.cmd(on and "windo set noscrollbind" or "windo set scrollbind")
+  vim.notify("scrollbind " .. (on and "OFF" or "ON") .. " (all windows)", vim.log.levels.INFO)
+end, { desc = "Toggle scrollbind (all windows)" })
+
 -- ── 退出前停 LSP（原 astrocore autocmds VimLeavePre，治孤儿进程）──
 vim.api.nvim_create_autocmd("VimLeavePre", {
   callback = function()
