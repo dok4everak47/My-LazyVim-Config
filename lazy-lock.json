@@ -101,6 +101,7 @@
   "quicker.nvim": { "branch": "master", "commit": "4a6883cb13fe097a20a046eb55f6dffd239276e3" },
   "rose-pine": { "branch": "main", "commit": "ff483051a47e27d84bdef47703538df1ed9f4a47" },
   "rustaceanvim": { "branch": "main", "commit": "facb3f26dc91e416425bf51585f3831edb833e02" },
+  "silicon.nvim": { "branch": "main", "commit": "d8a6852b7158cc98f44ab12a0811ccf7d111dc71" },
   "smartcolumn.nvim": { "branch": "main", "commit": "3a760dc239de71264072f829a184aafcf7d4d3e7" },
   "snacks.nvim": { "branch": "main", "commit": "882c996cf28183f4d63640de0b4c02ec886d01f2" },
   "solarized-osaka.nvim": { "branch": "main", "commit": "a21176efde15fab21fabda0bf2ba123ed6d7332d" },
