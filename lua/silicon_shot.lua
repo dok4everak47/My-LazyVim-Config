@@ -157,6 +157,10 @@ function M.setup(opts)
   })
 
   vim.keymap.set("x", "SS", ":Silicon<CR>", { desc = "代码转图片到剪贴板" })
+
+  -- 与 SS 等价的 leader 键位（不给 S 造成 timeout 延迟；<leader>y 组原本全空）
+  vim.keymap.set({ "n", "x" }, "<leader>ys", ":Silicon<CR>", { desc = "代码转图片到剪贴板" })
+  vim.keymap.set({ "n", "x" }, "<leader>yS", ":Silicon!<CR>", { desc = "代码转图片并存文件" })
 end
 
 return M
