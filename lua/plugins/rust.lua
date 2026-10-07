@@ -92,6 +92,17 @@ return {
       })
 
       ra.completion = vim.tbl_deep_extend("force", ra.completion or {}, {
+        -- 关掉“补全时自动加 use”（2026-10-05）
+        -- 它会静默挑第一个同名项，在这个 kernel 项目里已经造成 5 次事故：
+        --   core::cmp::Ordering                     遮掉了 atomic::Ordering
+        --   core::time                              没用到的多余导入
+        --   bootloader_api::info::Optional::Some    遮掉了整文件的 Option::Some（两次）
+        --   x86_64::align_up                        和自己定义的 align_up 撞名
+        -- 只是关掉“静默加”；手动显式导入仍然可用：
+        -- 光标放到名字上 → <leader>ca → Import（会弹菜单让你自己挑）。
+        autoimport = {
+          enable = false,
+        },
         callable = {
           snippets = "fill_arguments",
         },
