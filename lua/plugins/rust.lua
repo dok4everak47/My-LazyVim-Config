@@ -130,6 +130,22 @@ return {
               description = 'print!("…", …)',
               scope = "expr",
             },
+            -- asm!/global_asm!(2026-10-08)：VS Code 侧由 RA 的 custom snippet 提供
+            -- (另见 ~/Library/Application Support/Code/User/settings.json)。
+            -- 这里补上同样两项,两个编辑器的补全保持一致。
+            -- 注意:补全列表里会与 VS Code 那边同样"只有 RA 一份",不再重复。
+            ["asm!"] = {
+              prefix = { "asm" },
+              body = 'asm!("$1")$0',
+              description = 'asm!("…")',
+              scope = "expr",
+            },
+            ["global_asm!"] = {
+              prefix = { "global_asm" },
+              body = 'global_asm!("$1")$0',
+              description = 'global_asm!("…")',
+              scope = "expr",
+            },
           },
         },
       })
