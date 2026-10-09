@@ -47,6 +47,7 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.lang.python" }, -- Python (basedpyright/ruff/venv)
     { import = "lazyvim.plugins.extras.lang.clangd" }, -- C/C++ (clangd + clangd_extensions)
     { import = "lazyvim.plugins.extras.lang.typescript" }, -- TS/JS (vtsls)
+    { import = "lazyvim.plugins.extras.lang.go" }, -- Go (gopls + go/gomod treesitter; go 工具链与 gopls 走项目 devShell)
     { import = "lazyvim.plugins.extras.lang.rust" }, -- Rust (rustaceanvim + rust-analyzer, devShell 提供)
     { import = "lazyvim.plugins.extras.dap.core" }, -- 调试核心
     { import = "lazyvim.plugins.extras.coding.mini-surround" }, -- mini.surround 环绕编辑 (gsa/gsd/gsr, 2026-09-05)

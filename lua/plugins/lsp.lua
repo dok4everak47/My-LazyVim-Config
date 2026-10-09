@@ -36,6 +36,21 @@ local function nil_bin()
   return nil
 end
 
+-- gopls 同理：Go 工具链与 gopls 都在项目 devShell（如 ~/Project/ketch 的 flake）；
+-- GUI/外部启动的 nvim PATH 里没有 gopls，优先 exepath（direnv 激活的终端），
+-- 再退到当前目录 .direnv/bin（nix-direnv 生成的 profile bin 软链）。
+local function gopls_bin()
+  local path = vim.fn.exepath("gopls")
+  if path ~= "" then
+    return path
+  end
+  local direnv_path = vim.fn.getcwd() .. "/.direnv/bin/gopls"
+  if vim.fn.filereadable(direnv_path) == 1 then
+    return direnv_path
+  end
+  return nil
+end
+
 return {
   {
     "neovim/nvim-lspconfig",
@@ -64,6 +79,20 @@ return {
       -- marksman：markdown LSP（mason 装）。给 md 提供 documentSymbol（标题树），
       -- 让 <leader>ss 能模糊搜标题；LazyVim kind_filter 对 markdown = false（不过滤），标题不会被种类过滤掉。
       opts.servers.marksman = {}
+      -- gopls：Go LSP（extras.lang.go 声明 settings/init_options），二进制走项目 devShell（flake 提供 go+gopls），
+      -- 不装 mason（gopls 少了 go 工具链也是废的）；无 devShell 时禁用 → Go 文件退化为 treesitter（高亮/大纲），不报 ENOENT。
+      local gopls_path = gopls_bin()
+      if gopls_path then
+        opts.servers.gopls = vim.tbl_deep_extend("force", opts.servers.gopls or {}, {
+          mason = false,
+          cmd = { gopls_path },
+        })
+      else
+        opts.servers.gopls = vim.tbl_deep_extend("force", opts.servers.gopls or {}, {
+          mason = false,
+          enabled = false,
+        })
+      end
     end,
   },
   -- 关闭 nix 文件的 statix lint（statix 未全局安装，遵循 Nix 铁律：工具走 devShell；
