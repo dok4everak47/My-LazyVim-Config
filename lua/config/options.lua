@@ -19,6 +19,9 @@ opt.number = true
 opt.signcolumn = "yes"
 opt.wrap = true
 opt.spell = false
+-- 拼写检查语言：加 "cjk" 让中文/日文/韩文不再被标成拼错（LazyVim 会在 markdown/text 等
+-- buffer 里局部打开 spell，见 LazyVim autocmds wrap_spell；默认只有 en，中文整串标红波浪线）
+opt.spelllang = { "en", "cjk" }
 
 -- 缩进（默认 2 空格；C/C++/Elm 等按语言 autocmd 覆盖为 4）
 opt.tabstop = 2
