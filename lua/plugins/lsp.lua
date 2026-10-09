@@ -61,6 +61,9 @@ return {
       else
         opts.servers.nil_ls = { mason = false, enabled = false }
       end
+      -- marksman：markdown LSP（mason 装）。给 md 提供 documentSymbol（标题树），
+      -- 让 <leader>ss 能模糊搜标题；LazyVim kind_filter 对 markdown = false（不过滤），标题不会被种类过滤掉。
+      opts.servers.marksman = {}
     end,
   },
   -- 关闭 nix 文件的 statix lint（statix 未全局安装，遵循 Nix 铁律：工具走 devShell；

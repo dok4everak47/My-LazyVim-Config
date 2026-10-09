@@ -30,6 +30,9 @@ return {
         -- C/C++
         "clangd",
         "codelldb",
+        -- Markdown：只装 LSP（marksman），用于 <leader>ss 模糊搜标题 / 大纲
+        -- 刻意不 import LazyVim 的 lang.markdown extra（那会顺带 markdownlint 诊断 + prettier 格式化 + markdown-preview）
+        "marksman",
         -- Elm 的 elm-format 在 devShell（nix），不走 mason；nil 在 nix-darwin
       },
     },
