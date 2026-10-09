@@ -19,9 +19,26 @@ opt.number = true
 opt.signcolumn = "yes"
 opt.wrap = true
 opt.spell = false
--- 拼写检查语言：加 "cjk" 让中文/日文/韩文不再被标成拼错（LazyVim 会在 markdown/text 等
--- buffer 里局部打开 spell，见 LazyVim autocmds wrap_spell；默认只有 en，中文整串标红波浪线）
+-- 拼写检查语言：加 "cjk" 让中文/日文/韩文不再被标成拼错（LazyVim 会在 text/gitcommit
+-- 等 buffer 里局部打开 spell，见 LazyVim autocmds wrap_spell；默认只有 en，中文整串标红波浪线）
 opt.spelllang = { "en", "cjk" }
+
+-- markdown 彻底关掉 spell（用户 2026-10-09 定：技术缩写 LSP/nvim/autocmd 等不在英文词典里
+-- 一直标红，不愿维护个人词库，所以 md 不做英文拼写检查）。
+-- 不能用 nvim_create_autocmd 的 priority 键：nvim 0.12.4 不认（invalid key: priority），
+-- 且该错误会让本文件后面的选项/按键整段不执行。
+-- 改为同一 autocmd 挂 FileType + BufWinEnter 两个事件：BufWinEnter 必定晚于 FileType，
+-- 所以 LazyVim wrap_spell（FileType 里 opt_local.spell = true）之后我们再关掉，顺序稳。
+vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
+  pattern = "*",
+  callback = function()
+    local ft = vim.bo.filetype
+    if ft == "markdown" or ft == "markdown.mdx" then
+      vim.opt_local.spell = false
+    end
+  end,
+  desc = "markdown 关闭拼写检查（覆盖 LazyVim wrap_spell）",
+})
 
 -- 缩进（默认 2 空格；C/C++/Elm 等按语言 autocmd 覆盖为 4）
 opt.tabstop = 2
