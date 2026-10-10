@@ -1,0 +1,826 @@
+{
+  "package 声明": {
+    "prefix": "pkg",
+    "body": "package ${1:main}$0",
+    "description": "package·包声明"
+  },
+  "main 包 + main": {
+    "prefix": "pkgm",
+    "body": [
+      "package main",
+      "",
+      "func main() {",
+      "\t${1:body}$0",
+      "}"
+    ],
+    "description": "pkgm·main 包+入口"
+  },
+  "import 单个": {
+    "prefix": "im",
+    "body": "import \"${1:fmt}\"$0",
+    "description": "im·import 一条"
+  },
+  "import 块": {
+    "prefix": "ims",
+    "body": [
+      "import (",
+      "\t\"${1:fmt}\"",
+      "\t\"${2:os}\"$0",
+      ")"
+    ],
+    "description": "ims·import 块"
+  },
+  "import 别名": {
+    "prefix": "ima",
+    "body": "import ${1:alias} \"${2:pkg}$0\"",
+    "description": "ima·import 别名"
+  },
+  "func main": {
+    "prefix": "fmain",
+    "body": [
+      "func main() {",
+      "\t${1:body}$0",
+      "}"
+    ],
+    "description": "fmain·main 函数"
+  },
+  "func init": {
+    "prefix": "finit",
+    "body": [
+      "func init() {",
+      "\t${1:body}$0",
+      "}"
+    ],
+    "description": "finit·init 函数"
+  },
+  "var 变量": {
+    "prefix": "var",
+    "body": "var ${1:name} ${2:type}$0",
+    "description": "var·变量声明"
+  },
+  "var 块": {
+    "prefix": "vars",
+    "body": [
+      "var (",
+      "\t${1:name} ${2:type} = ${3:value}$0",
+      ")"
+    ],
+    "description": "vars·变量块"
+  },
+  "const 常量": {
+    "prefix": "co",
+    "body": "const ${1:name} = ${2:value}$0",
+    "description": "co·常量"
+  },
+  "const 块": {
+    "prefix": "cos",
+    "body": [
+      "const (",
+      "\t${1:name} = ${2:value}$0",
+      ")"
+    ],
+    "description": "cos·常量块"
+  },
+  "短变量声明": {
+    "prefix": ":=",
+    "body": "${1:name} := ${2:value}$0",
+    "description": ":=·短变量声明"
+  },
+  "type struct": {
+    "prefix": "tys",
+    "body": [
+      "type ${1:Name} struct {",
+      "\t${2:Field} ${3:Type} `json:\"${4:field}\"`$0",
+      "}"
+    ],
+    "description": "tys·结构体"
+  },
+  "type interface": {
+    "prefix": "tyi",
+    "body": [
+      "type ${1:Name} interface {",
+      "\t${2:Method}(${3:args}) ${4:ret}$0",
+      "}"
+    ],
+    "description": "tyi·接口"
+  },
+  "type 定义": {
+    "prefix": "typ",
+    "body": "type ${1:Name} ${2:Type}$0",
+    "description": "typ·类型定义/别名"
+  },
+  "type func": {
+    "prefix": "tyf",
+    "body": "type ${1:Name} func(${2:args}) ${3:ret}$0",
+    "description": "tyf·函数类型"
+  },
+  "type 泛型": {
+    "prefix": "tyg",
+    "body": [
+      "type ${1:Name}[${2:T} ${3:any}] struct {",
+      "\t${4:Field} ${2:T}$0",
+      "}"
+    ],
+    "description": "tyg·泛型结构体"
+  },
+  "方法(值接收)": {
+    "prefix": ["meth", "fum"],
+    "body": [
+      "func (${1:r} ${2:Type}) ${3:Name}(${4:args}) ${5:ret} {",
+      "\t${6:body}$0",
+      "}"
+    ],
+    "description": "meth·方法(值接收)"
+  },
+  "方法(指针接收)": {
+    "prefix": "methp",
+    "body": [
+      "func (${1:r} *${2:Type}) ${3:Name}(${4:args}) ${5:ret} {",
+      "\t${6:body}$0",
+      "}"
+    ],
+    "description": "methp·方法(指针接收)"
+  },
+  "func 函数声明": {
+    "prefix": "func",
+    "body": [
+      "func ${1:Name}(${2:args}) ${3:ret} {",
+      "\t${4:body}$0",
+      "}"
+    ],
+    "description": "func·函数声明"
+  },
+  "泛型函数": {
+    "prefix": "fg",
+    "body": [
+      "func ${1:Name}[${2:T} ${3:any}](${4:args}) ${5:ret} {",
+      "\t${6:body}$0",
+      "}"
+    ],
+    "description": "fg·泛型函数"
+  },
+  "匿名函数": {
+    "prefix": "fn",
+    "body": [
+      "func(${1:args}) ${2:ret} {",
+      "\t${3:body}$0",
+      "}"
+    ],
+    "description": "fn·匿名函数"
+  },
+  "闭包赋值": {
+    "prefix": "fv",
+    "body": "${1:fn} := func(${2:args}) ${3:ret} { ${4:body} }$0",
+    "description": "fv·函数值/闭包"
+  },
+  "if": {
+    "prefix": "if",
+    "body": [
+      "if ${1:cond} {",
+      "\t${2:body}$0",
+      "}"
+    ],
+    "description": "if·条件"
+  },
+  "if/else": {
+    "prefix": "ife",
+    "body": [
+      "if ${1:cond} {",
+      "\t${2:body}",
+      "} else {",
+      "\t${3:elseBody}$0",
+      "}"
+    ],
+    "description": "ife·if/else"
+  },
+  "else if": {
+    "prefix": "elif",
+    "body": [
+      "} else if ${1:cond} {",
+      "\t${2:body}$0",
+      "}"
+    ],
+    "description": "elif·else if"
+  },
+  "else": {
+    "prefix": "el",
+    "body": [
+      "else {",
+      "\t${1:body}$0",
+      "}"
+    ],
+    "description": "el·else 分支"
+  },
+  "if err != nil 返回": {
+    "prefix": "ir",
+    "body": [
+      "if err != nil {",
+      "\treturn ${1:nil}, ${2:err}",
+      "}$0"
+    ],
+    "description": "ir·if err 返回"
+  },
+  "if err != nil 仅 return err": {
+    "prefix": "ire",
+    "body": [
+      "if err != nil {",
+      "\treturn ${1:err}",
+      "}$0"
+    ],
+    "description": "ire·if err 仅返回 err"
+  },
+  "for 条件": {
+    "prefix": "for",
+    "body": [
+      "for ${1:cond} {",
+      "\t${2:body}$0",
+      "}"
+    ],
+    "description": "for·for 循环"
+  },
+  "for i": {
+    "prefix": "fori",
+    "body": [
+      "for ${1:i} := ${2:0}; ${1:i} < ${3:n}; ${1:i}++ {",
+      "\t${4:body}$0",
+      "}"
+    ],
+    "description": "fori·计数循环"
+  },
+  "for range kv": {
+    "prefix": "forr",
+    "body": [
+      "for ${1:i}, ${2:v} := range ${3:items} {",
+      "\t${4:body}$0",
+      "}"
+    ],
+    "description": "forr·range 键值"
+  },
+  "for range 仅索引": {
+    "prefix": "frr",
+    "body": [
+      "for ${1:i} := range ${2:items} {",
+      "\t${3:body}$0",
+      "}"
+    ],
+    "description": "frr·range 仅索引"
+  },
+  "for range 仅值": {
+    "prefix": "frv",
+    "body": [
+      "for _, ${1:v} := range ${2:items} {",
+      "\t${3:body}$0",
+      "}"
+    ],
+    "description": "frv·range 仅值"
+  },
+  "for 无限循环": {
+    "prefix": "forever",
+    "body": [
+      "for {",
+      "\t${1:body}$0",
+      "}"
+    ],
+    "description": "forever·无限循环"
+  },
+  "switch": {
+    "prefix": "switch",
+    "body": [
+      "switch ${1:expr} {",
+      "case ${2:cond}:",
+      "\t${3:body}$0",
+      "}"
+    ],
+    "description": "switch·switch 表达式"
+  },
+  "switch 无条件": {
+    "prefix": "swt",
+    "body": [
+      "switch {",
+      "case ${1:cond}:",
+      "\t${2:body}$0",
+      "}"
+    ],
+    "description": "swt·switch 无条件"
+  },
+  "type switch": {
+    "prefix": "ts",
+    "body": [
+      "switch ${1:v} := ${2:x}.(type) {",
+      "case ${3:string}:",
+      "\t${4:body}$0",
+      "}"
+    ],
+    "description": "ts·类型 switch"
+  },
+  "case": {
+    "prefix": "cs",
+    "body": "case ${1:cond}:$0",
+    "description": "cs·case 分支"
+  },
+  "default": {
+    "prefix": "def",
+    "body": "default:$0",
+    "description": "def·default 分支"
+  },
+  "select": {
+    "prefix": "sel",
+    "body": [
+      "select {",
+      "case ${1:msg} := <-${2:ch}:",
+      "\t${3:body}$0",
+      "}"
+    ],
+    "description": "sel·select 通道"
+  },
+  "select 双分支": {
+    "prefix": "sel2",
+    "body": [
+      "select {",
+      "case ${1:msg} := <-${2:ch1}:",
+      "\t${3:body}",
+      "case ${4:ch2} <- ${5:val}:",
+      "\t${6:body}",
+      "}$0"
+    ],
+    "description": "sel2·select 收发双分支"
+  },
+  "go 匿名协程": {
+    "prefix": "go",
+    "body": [
+      "go func(${1:args}) {",
+      "\t${2:body}$0",
+      "}(${3:args})"
+    ],
+    "description": "go·匿名 goroutine"
+  },
+  "go 调用": {
+    "prefix": "gf",
+    "body": "go ${1:fn}(${2:args})$0",
+    "description": "gf·goroutine 调用"
+  },
+  "defer": {
+    "prefix": "df",
+    "body": "defer ${1:fn}(${2:args})$0",
+    "description": "df·defer 调用"
+  },
+  "defer 匿名函数": {
+    "prefix": "dfa",
+    "body": [
+      "defer func() {",
+      "\t${1:body}$0",
+      "}()"
+    ],
+    "description": "dfa·defer 匿名函数"
+  },
+  "chan 类型": {
+    "prefix": "ch",
+    "body": "chan ${1:any}$0",
+    "description": "ch·channel 类型"
+  },
+  "带缓冲 chan": {
+    "prefix": "chb",
+    "body": "make(chan ${1:any}, ${2:1})$0",
+    "description": "chb·带缓冲 channel"
+  },
+  "chan 发送": {
+    "prefix": "chs",
+    "body": "${1:ch} <- ${2:val}$0",
+    "description": "chs·channel 发送"
+  },
+  "chan 接收": {
+    "prefix": "chr",
+    "body": "${1:val} := <-${2:ch}$0",
+    "description": "chr·channel 接收"
+  },
+  "sync.Mutex": {
+    "prefix": "mu",
+    "body": "var ${1:mu} sync.Mutex$0",
+    "description": "mu·互斥锁声明"
+  },
+  "加锁 + defer 解锁": {
+    "prefix": "lock",
+    "body": [
+      "${1:mu}.Lock()",
+      "defer ${1:mu}.Unlock()$0"
+    ],
+    "description": "lock·加锁+defer 解锁"
+  },
+  "sync.RWMutex": {
+    "prefix": "rwmu",
+    "body": "var ${1:mu} sync.RWMutex$0",
+    "description": "rwmu·读写锁声明"
+  },
+  "读锁 + defer": {
+    "prefix": "rlock",
+    "body": [
+      "${1:mu}.RLock()",
+      "defer ${1:mu}.RUnlock()$0"
+    ],
+    "description": "rlock·读锁+defer 解锁"
+  },
+  "sync.WaitGroup": {
+    "prefix": "wg",
+    "body": [
+      "var ${1:wg} sync.WaitGroup",
+      "",
+      "${1:wg}.Add(${2:1})",
+      "go func() {",
+      "\tdefer ${1:wg}.Done()",
+      "\t${3:body}$0",
+      "}()",
+      "${1:wg}.Wait()"
+    ],
+    "description": "wg·WaitGroup 等待组"
+  },
+  "sync.Once": {
+    "prefix": "once",
+    "body": [
+      "var ${1:once} sync.Once",
+      "${1:once}.Do(func() {",
+      "\t${2:body}$0",
+      "})"
+    ],
+    "description": "once·sync.Once"
+  },
+  "errors.New": {
+    "prefix": "err",
+    "body": "errors.New(\"${1:msg}\")$0",
+    "description": "err·errors.New"
+  },
+  "fmt.Errorf 包装": {
+    "prefix": "errf",
+    "body": "fmt.Errorf(\"${1:msg}: %w\", ${2:err})$0",
+    "description": "errf·fmt.Errorf 包装 %w"
+  },
+  "panic": {
+    "prefix": "pn",
+    "body": "panic(\"${1:msg}\")$0",
+    "description": "pn·panic"
+  },
+  "recover": {
+    "prefix": "rec",
+    "body": [
+      "defer func() {",
+      "\tif ${1:r} := recover(); ${1:r} != nil {",
+      "\t\t${2:log}(${1:r})$0",
+      "\t}",
+      "}()"
+    ],
+    "description": "rec·recover 捕获"
+  },
+  "自定义 error 类型": {
+    "prefix": "erty",
+    "body": [
+      "type ${1:Name}Error struct {",
+      "\t${2:Msg} string$0",
+      "}",
+      "",
+      "func (e ${1:Name}Error) Error() string {",
+      "\treturn e.${2:Msg}$0",
+      "}"
+    ],
+    "description": "erty·自定义 error 类型"
+  },
+  "String() 方法": {
+    "prefix": "str",
+    "body": [
+      "func (${1:r} ${2:Type}) String() string {",
+      "\treturn ${3:fmt.Sprintf(\"%v\", ${1:r})}$0",
+      "}"
+    ],
+    "description": "str·Stringer 实现"
+  },
+  "接口实现断言": {
+    "prefix": "impl",
+    "body": "var _ ${1:Iface} = (*${2:Type})(nil)$0",
+    "description": "impl·接口实现断言"
+  },
+  "os.Exit": {
+    "prefix": "exit",
+    "body": "os.Exit(${1:1})$0",
+    "description": "exit·os.Exit"
+  },
+  "map 类型": {
+    "prefix": "map",
+    "body": "map[${1:string}]${2:any}$0",
+    "description": "map·map 类型"
+  },
+  "map 字面量": {
+    "prefix": "mapl",
+    "body": "map[${1:string}]${2:any}{${3:\"key\": val}}$0",
+    "description": "mapl·map 字面量"
+  },
+  "slice 类型": {
+    "prefix": "sl",
+    "body": "[]${1:any}$0",
+    "description": "sl·slice 类型"
+  },
+  "slice 字面量": {
+    "prefix": "sll",
+    "body": "[]${1:any}{${2:1, 2}}$0",
+    "description": "sll·slice 字面量"
+  },
+  "array 类型": {
+    "prefix": "ar",
+    "body": "[${1:len}]${2:any}$0",
+    "description": "ar·数组类型"
+  },
+  "struct 字面量": {
+    "prefix": "stl",
+    "body": "${1:Type}{${2:Field: value}}$0",
+    "description": "stl·结构体字面量"
+  },
+  "make": {
+    "prefix": "make",
+    "body": "make(${1:type}, ${2:0})$0",
+    "description": "make·make"
+  },
+  "new": {
+    "prefix": "new",
+    "body": "new(${1:Type})$0",
+    "description": "new·new"
+  },
+  "append": {
+    "prefix": "app",
+    "body": "append(${1:slice}, ${2:elem}$0)",
+    "description": "app·append 追加"
+  },
+  "interface{}": {
+    "prefix": "in",
+    "body": "interface{}$0",
+    "description": "in·空接口"
+  },
+  "json tag": {
+    "prefix": "json",
+    "body": "`json:\"${1:name}\"`$0",
+    "description": "json·struct tag"
+  },
+  "yaml tag": {
+    "prefix": "yaml",
+    "body": "`yaml:\"${1:name}\"`$0",
+    "description": "yaml·struct tag"
+  },
+  "xml tag": {
+    "prefix": "xml",
+    "body": "`xml:\"${1:name}\"`$0",
+    "description": "xml·struct tag"
+  },
+  "db tag": {
+    "prefix": "db",
+    "body": "`db:\"${1:name}\"`$0",
+    "description": "db·struct tag"
+  },
+  "form tag": {
+    "prefix": "form",
+    "body": "`form:\"${1:name}\"`$0",
+    "description": "form·struct tag"
+  },
+  "struct 字段": {
+    "prefix": "sf",
+    "body": "${1:Name} ${2:Type} `json:\"${3:name}\"`$0",
+    "description": "sf·结构体字段"
+  },
+  "fmt.Println": {
+    "prefix": "fp",
+    "body": "fmt.Println(${1:args})$0",
+    "description": "fp·fmt.Println"
+  },
+  "fmt.Printf": {
+    "prefix": "ff",
+    "body": "fmt.Printf(\"${1:%v}\", ${2:args})$0",
+    "description": "ff·fmt.Printf"
+  },
+  "fmt.Sprintf": {
+    "prefix": "fs",
+    "body": "fmt.Sprintf(\"${1:%v}\", ${2:args})$0",
+    "description": "fs·fmt.Sprintf"
+  },
+  "log.Println": {
+    "prefix": "lp",
+    "body": "log.Println(${1:args})$0",
+    "description": "lp·log.Println"
+  },
+  "log.Printf": {
+    "prefix": "lf",
+    "body": "log.Printf(\"${1:msg}\", ${2:args})$0",
+    "description": "lf·log.Printf"
+  },
+  "log 变量内容": {
+    "prefix": "lv",
+    "body": "log.Printf(\"${1:var}: %#+v\", ${1:var})$0",
+    "description": "lv·log 打印变量"
+  },
+  "log.Fatal": {
+    "prefix": "lft",
+    "body": "log.Fatal(${1:err})$0",
+    "description": "lft·log.Fatal"
+  },
+  "Test 函数": {
+    "prefix": "tf",
+    "body": [
+      "func Test${1:Name}(t *testing.T) {",
+      "\t${2:body}$0",
+      "}"
+    ],
+    "description": "tf·测试函数"
+  },
+  "TestMain": {
+    "prefix": "tm",
+    "body": [
+      "func TestMain(m *testing.M) {",
+      "\t${1:setup()}",
+      "",
+      "\tos.Exit(m.Run())",
+      "}"
+    ],
+    "description": "tm·TestMain"
+  },
+  "Benchmark": {
+    "prefix": "bf",
+    "body": [
+      "func Benchmark${1:Name}(b *testing.B) {",
+      "\tfor ${2:i} := 0; ${2:i} < b.N; ${2:i}++ {",
+      "\t\t${3:body}$0",
+      "\t}",
+      "}"
+    ],
+    "description": "bf·基准测试"
+  },
+  "Example": {
+    "prefix": "ef",
+    "body": [
+      "func Example${1:Name}() {",
+      "\t${2:body}",
+      "\t// Output:",
+      "\t${3:expected}$0",
+      "}"
+    ],
+    "description": "ef·Example 示例"
+  },
+  "表驱动测试": {
+    "prefix": "tdt",
+    "body": [
+      "func Test${1:Name}(t *testing.T) {",
+      "\ttests := []struct {",
+      "\t\tname string",
+      "\t\t${2:want} ${3:any}",
+      "\t}{",
+      "\t\t{\"${4:case}\", ${5:want}},",
+      "\t}",
+      "",
+      "\tfor _, tt := range tests {",
+      "\t\tt.Run(tt.name, func(t *testing.T) {",
+      "\t\t\t${6:got} := ${7:todo}",
+      "\t\t})",
+      "\t}$0",
+      "}"
+    ],
+    "description": "tdt·表驱动测试"
+  },
+  "子测试 t.Run": {
+    "prefix": "tsub",
+    "body": [
+      "t.Run(${1:name}, func(t *testing.T) {",
+      "\t${2:body}$0",
+      "})"
+    ],
+    "description": "tsub·子测试"
+  },
+  "模糊测试 Fuzz": {
+    "prefix": "fz",
+    "body": [
+      "func Fuzz${1:Name}(f *testing.F) {",
+      "\tf.Add(${2:0})",
+      "",
+      "\tf.Fuzz(func(t *testing.T, ${3:n} int) {",
+      "\t\t${4:body}$0",
+      "\t})",
+      "}"
+    ],
+    "description": "fz·模糊测试"
+  },
+  "http handler": {
+    "prefix": "hand",
+    "body": [
+      "func ${1:name}(w http.ResponseWriter, r *http.Request) {",
+      "\t${2:body}$0",
+      "}"
+    ],
+    "description": "hand·http handler"
+  },
+  "http.HandleFunc": {
+    "prefix": "hf",
+    "body": "http.HandleFunc(\"${1:/}\", ${2:handler})$0",
+    "description": "hf·http.HandleFunc"
+  },
+  "http.Redirect": {
+    "prefix": "rd",
+    "body": "http.Redirect(w, r, \"${1:/}\", ${2:http.StatusFound})$0",
+    "description": "rd·http.Redirect"
+  },
+  "http.Error": {
+    "prefix": "herr",
+    "body": "http.Error(w, ${1:err}.Error(), ${2:http.StatusInternalServerError})$0",
+    "description": "herr·http.Error"
+  },
+  "http.ListenAndServe": {
+    "prefix": "las",
+    "body": "http.ListenAndServe(\"${1::8080}\", ${2:nil})$0",
+    "description": "las·http.ListenAndServe"
+  },
+  "http.Serve": {
+    "prefix": "sv",
+    "body": "http.Serve(${1:ln}, ${2:nil})$0",
+    "description": "sv·http.Serve"
+  },
+  "ResponseWriter, Request": {
+    "prefix": "wr",
+    "body": "w http.ResponseWriter, r *http.Request$0",
+    "description": "wr·http 参数签名"
+  },
+  "httptest server": {
+    "prefix": "hts",
+    "body": [
+      "srv := httptest.NewServer(${1:handler})",
+      "defer srv.Close()$0"
+    ],
+    "description": "hts·httptest 测试服务器"
+  },
+  "hello web": {
+    "prefix": "helloweb",
+    "body": [
+      "package main",
+      "",
+      "import (",
+      "\t\"fmt\"",
+      "\t\"net/http\"",
+      "\t\"time\"",
+      ")",
+      "",
+      "func greet(w http.ResponseWriter, r *http.Request) {",
+      "\tfmt.Fprintf(w, \"Hello World! %s\", time.Now())",
+      "}",
+      "",
+      "func main() {",
+      "\thttp.HandleFunc(\"/\", greet)",
+      "\thttp.ListenAndServe(\":8080\", nil)",
+      "}"
+    ],
+    "description": "helloweb·Hello web 骨架"
+  },
+  "context 参数": {
+    "prefix": "ctx",
+    "body": "ctx context.Context$0",
+    "description": "ctx·context 参数"
+  },
+  "context.Background": {
+    "prefix": "ctxb",
+    "body": "ctx := context.Background()$0",
+    "description": "ctxb·context.Background"
+  },
+  "sort.Slice": {
+    "prefix": "ssort",
+    "body": [
+      "sort.Slice(${1:items}, func(i, j int) bool {",
+      "\treturn ${2:items[i]} < ${3:items[j]}$0",
+      "})"
+    ],
+    "description": "ssort·sort.Slice 排序"
+  },
+  "sort 接口实现": {
+    "prefix": "sort",
+    "body": [
+      "type ${1:SortBy} []${2:Type}",
+      "",
+      "func (a ${1:SortBy}) Len() int           { return len(a) }",
+      "func (a ${1:SortBy}) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }",
+      "func (a ${1:SortBy}) Less(i, j int) bool { ${3:return a[i] < a[j]} }"
+    ],
+    "description": "sort·sort.Interface 实现"
+  },
+  "map 取值判断": {
+    "prefix": "om",
+    "body": [
+      "if ${1:value}, ok := ${2:map}[${3:key}]; ok {",
+      "\t${4:body}$0",
+      "}"
+    ],
+    "description": "om·map 取值+ok 判断"
+  },
+  "t.Log": {
+    "prefix": "tl",
+    "body": "t.Log(${1:args})$0",
+    "description": "tl·t.Log"
+  },
+  "t.Logf": {
+    "prefix": "tlf",
+    "body": "t.Logf(\"${1:%v}\", ${2:args})$0",
+    "description": "tlf·t.Logf"
+  },
+  "t.Logf 变量内容": {
+    "prefix": "tlv",
+    "body": "t.Logf(\"${1:var}: %#+v\", ${1:var})$0",
+    "description": "tlv·t.Logf 打印变量"
+  }
+}
