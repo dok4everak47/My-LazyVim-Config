@@ -13,8 +13,19 @@ return {
         nix = { "alejandra" },
       })
 
+      -- goimports / gofumpt 都要 `go` 工具链（mason 的二进制自己会去调 go）。
+      -- PATH 里没有 go（nvim 不是从项目 devShell 的 shell 启动的）时 conform 会
+      -- 每次保存弹 "Formatter 'goimports' error: err: go command required, not found"
+      -- （2026-10-10 16:05 实测）。用 condition 在拿不到 go 时静默跳过这两个 formatter：
+      -- 反正没 go 也格不了，别把无法完成的动作变成一个报错。
+      local go_ok = function()
+        return vim.fn.executable("go") == 1
+      end
+
       -- elm_format：优先项目 devShell/.direnv 的 elm-format，fallback PATH(mason)
       opts.formatters = vim.tbl_deep_extend("force", opts.formatters or {}, {
+        goimports = { condition = go_ok },
+        gofumpt = { condition = go_ok },
         elm_format = {
           command = function()
             local cwd = vim.fn.getcwd()

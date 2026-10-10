@@ -103,6 +103,15 @@ return {
     opts = function(_, opts)
       opts.linters_by_ft = opts.linters_by_ft or {}
       opts.linters_by_ft.nix = nil -- 移除 nix 的 statix，nil_ls 诊断已足够
+      -- golangci-lint 同样要 `go` 工具链。PATH 里没有 go（nvim 不是从项目 devShell
+      -- 的 shell 启动的）时它会打印 help / level=error 日志，nvim-lint 按 JSON 解析
+      -- 失败 → 在文件第 1 行抛假错误
+      -- "Parser failed. Error message: ... Expected value but found invalid token"
+      -- （2026-10-10 实测）。照上面 nil_ls 的降级套路：没 go 就不注册 go 的 linter，
+      -- 静默跳过；有 go 时（devShell 里启动的 nvim）照常 lint。
+      if vim.fn.executable("go") == 0 then
+        opts.linters_by_ft.go = nil
+      end
     end,
   },
 }
