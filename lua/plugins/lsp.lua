@@ -79,6 +79,13 @@ return {
       -- marksman：markdown LSP（mason 装）。给 md 提供 documentSymbol（标题树），
       -- 让 <leader>ss 能模糊搜标题；LazyVim kind_filter 对 markdown = false（不过滤），标题不会被种类过滤掉。
       opts.servers.marksman = {}
+      -- pyrefly / ty：Meta 与 Astral 的 Python 类型引擎，不在 mason 列表、也不在 python extra 的 servers 里，
+      -- 但被 mason-lspconfig 的 automatic_enable 自动发现并 attach（见 LazyVim lsp/init.lua:274 的
+      -- mason_exclude 机制）。它们与 basedpyright 都发 inlayHint，同一变量位置叠加成 `n: int: int` 重复提示。
+      -- 显式 enabled=false → 进入 mason_exclude → 被 automatic_enable 排除，不再 attach。
+      -- 保留 basedpyright（你选定的类型提示来源）+ ruff（不发 inlay hint，无害）。
+      opts.servers.pyrefly = { enabled = false }
+      opts.servers.ty = { enabled = false }
       -- gopls：Go LSP（extras.lang.go 声明 settings/init_options），二进制走项目 devShell（flake 提供 go+gopls），
       -- 不装 mason（gopls 少了 go 工具链也是废的）；无 devShell 时禁用 → Go 文件退化为 treesitter（高亮/大纲），不报 ENOENT。
       local gopls_path = gopls_bin()
