@@ -14,7 +14,7 @@
 --    否则「打开看一眼就退出」也会把状态文件改掉。
 local M = {}
 
-M.default = "oxocarbon"
+M.default = "token-ultra" -- 2026-10-09: oxocarbon → Token Ultra (ThorstenRhau/token, 与 Ghostty/Herdr/Hermes 同源)
 M.state_file = vim.fn.stdpath("state") .. "/colorscheme"
 
 local picking = false -- picker 正开着 (期间不记)
